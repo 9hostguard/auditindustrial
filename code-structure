@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HostGuard Safety Intelligence</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.37/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        :root {
+            --safe: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --emergency: #DC2626;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #f3f4f6;
+            color: #1f2937;
+            padding: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .panel {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .header {
+            text-align: center;
+            padding: 1rem 0 2rem;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .header p {
+            font-size: 1.2rem;
+            color: #6b7280;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        @media (min-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .kiln {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            border: 3px solid var(--safe);
+            border-radius: 0.5rem;
+            background: #fffbeb;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        .brick {
+            position: absolute;
+            width: 40px;
+            height: 20px;
+            background: #92400e;
+            transition: transform 0.5s ease;
+        }
+        .emergency-pulse {
+            animation: pulse 0.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+        .medical-clause {
+            background: #fffbeb;
+            font-family: 'Courier New', monospace;
+            white-space: pre;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            border-left: 4px solid #f59e0b;
+            line-height: 1.6;
+            font-size: 0.9rem;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 1rem;
+            margin-top: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        button.emergency {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        .slider-container {
+            margin: 1.5rem 0;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e5e7eb;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        .stat-card {
+            background: #f9fafb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            text-align: center;
+            border-left: 4px solid #3b82f6;
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+        .highlight {
+            color: var(--safe);
+            font-weight: 700;
+        }
+        .footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        .keyboard-hint {
+            background: #e5e7eb;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <h1>HostGuard Safety Intelligence</h1>
+            <p>Amazon Reliability × Kiln Precision × Life Extension</p>
+        </div>
+
+        <div class="panel">
+            <h2>Industrial Safety Simulator</h2>
+            <p>Adjust precision levels to see impact on worker safety and life expectancy</p>
+            
+            <div class="slider-container">
+                <label>Safety Precision: <span class="highlight">{{ safetyPrecision }}mm</span> (kiln standard: 0.5mm)</label>
+                <input type="range" v-model="safetyPrecision" min="0.1" max="2.0" step="0.1">
+            </div>
+            
+            <div class="slider-container">
+                <label>Regional Birth Rate: <span class="highlight">{{ birthRate }}</span> per 1000 people</label>
+                <input type="range" v-model="birthRate" min="1" max="15" step="0.1">
+            </div>
+            
+            <button 
+                @click="triggerEmergency"
+                :class="{ emergency: emergencyActive }"
+            >
+                <span v-if="!emergencyActive">🚨 Trigger Emergency Protocol</span>
+                <span v-else>🔥 EMERGENCY ACTIVE! 🔥</span>
+            </button>
+            
+            <div class="keyboard-hints">
+                <p><small>Quick keys: <span class="keyboard-hint">1</span> Gold Standard (0.5mm) | 
+                <span class="keyboard-hint">2</span> Danger Zone (2.0mm) | 
+                <span class="keyboard-hint">E</span> Emergency</small></p>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value">{{ reliability.toFixed(1) }}%</div>
+                <div class="stat-label">System Reliability</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">+{{ lifeExpectancyGain.toFixed(1) }}</div>
+                <div class="stat-label">Life Expectancy Gain</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">-{{ premiumReduction.toFixed(1) }}%</div>
+                <div class="stat-label">Medical Premiums</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ birthRateStability.toFixed(1) }}%</div>
+                <div class="stat-label">Birth Rate Stability</div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="panel">
+                <h2>Precision Visualization</h2>
+                <p>Safety tolerance modeled after industrial kiln operations</p>
+                <div class="kiln" :class="{
+                    'border-green-500': toleranceClass === 'safe',
+                    'border-yellow-500': toleranceClass === 'warning',
+                    'border-red-500': toleranceClass === 'danger',
+                    'emergency-pulse': emergencyActive
+                }">
+                    <div 
+                        class="brick" 
+                        v-for="(brick, index) in bricks" 
+                        :key="index"
+                        :style="{
+                            top: brick.top + 'px',
+                            left: brick.left + 'px',
+                            transform: emergencyActive ? 'rotate(' + (Math.random() * 10 - 5) + 'deg)' : 'none'
+                        }"
+                    ></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>System Reliability</h2>
+                <p>Amazon-style delivery performance tracking</p>
+                <div id="chart"></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Medical Impact Analysis</h2>
+            <p>Auto-generated policy clauses based on safety levels</p>
+            <div class="medical-clause">{{ clauseText }}</div>
+        </div>
+
+        <div class="footer">
+            HostGuard Safety Intelligence | Systems Engineering Demo
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, watch, onMounted } = Vue;
+        
+        createApp({
+            setup() {
+                // State
+                const safetyPrecision = ref(0.5);
+                const birthRate = ref(8.5);
+                const emergencyActive = ref(false);
+                const reliability = ref(99.8);
+                const bricks = ref([]);
+                const chart = ref(null);
+                
+                // Tolerance classification
+                const toleranceClass = computed(() => {
+                    if (safetyPrecision.value <= 0.5) return 'safe';
+                    if (safetyPrecision.value <= 1.0) return 'warning';
+                    return 'danger';
+                });
+                
+                // Life expectancy model
+                const lifeExpectancyGain = computed(() => {
+                    return (0.5 / safetyPrecision.value) * 8.7;
+                });
+                
+                // Premium reduction calculation
+                const premiumReduction = computed(() => {
+                    return (0.5 / safetyPrecision.value) * 42;
+                });
+                
+                // Birth rate stability
+                const birthRateStability = computed(() => {
+                    return 95 + (0.5 / safetyPrecision.value);
+                });
+                
+                // Medical clause text
+                const clauseText = computed(() => {
+                    let approvalFlag = '';
+                    if (safetyPrecision.value <= 0.5) {
+                        approvalFlag = '\n⭐ ELON MUSK APPROVAL FLAG ⭐';
+                    }
+                    
+                    return `
+=================================================================
+                      MEDICAL COVERAGE CLAUSE 7.4R
+=================================================================
+
+CERTIFIED HOSTGUARD LEVEL ${safetyPrecision.value.toFixed(1)}mm FACILITIES RECEIVE:
+
+• ${premiumReduction.value.toFixed(1)}% reduction in medical premiums
+• +${lifeExpectancyGain.value.toFixed(1)} year life expectancy guarantee
+• ${birthRateStability.value.toFixed(1)}% birth complication coverage
+• 99.8% reliability for critical medical supplies
+• Priority emergency response protocols
+
+SAFETY CERTIFICATION BENEFITS:
+- Worker compensation reduction: 22-40%
+- Industrial accident insurance: ${(58 - (safetyPrecision.value * 20)).toFixed(1)}% discount
+- Longevity bonus: $${(lifeExpectancyGain.value * 1500).toFixed(0)} annual
+
+SYSTEM RELIABILITY: ${reliability.value.toFixed(1)}% 
+${approvalFlag}
+=================================================================
+                    AUTOMATED POLICY GENERATOR
+=================================================================`;
+                });
+                
+                // Emergency protocol
+                const triggerEmergency = () => {
+                    emergencyActive.value = true;
+                    setTimeout(() => {
+                        emergencyActive.value = false;
+                    }, 5000);
+                };
+                
+                // Initialize bricks for visualization
+                const initBricks = () => {
+                    const newBricks = [];
+                    for (let i = 0; i < 30; i++) {
+                        newBricks.push({
+                            top: Math.random() * 280,
+                            left: Math.random() * (window.innerWidth > 768 ? 500 : 300)
+                        });
+                    }
+                    bricks.value = newBricks;
+                };
+                
+                // Initialize chart
+                const initChart = () => {
+                    chart.value = new ApexCharts(document.querySelector("#chart"), {
+                        chart: {
+                            type: 'line',
+                            height: 280,
+                            animations: { enabled: true, easing: 'easeout' },
+                            toolbar: { show: false }
+                        },
+                        series: [{
+                            name: "System Reliability",
+                            data: [99.8, 99.7, 99.6, 99.8, 99.7, 99.9]
+                        }],
+                        stroke: {
+                            curve: 'smooth',
+                            width: 4,
+                            colors: ['#10B981']
+                        },
+                        markers: {
+                            size: 5,
+                            colors: ['#10B981']
+                        },
+                        grid: {
+                            borderColor: '#e5e7eb'
+                        },
+                        xaxis: {
+                            labels: { show: false }
+                        },
+                        yaxis: {
+                            min: 97,
+                            max: 100,
+                            labels: {
+                                formatter: function(val) {
+                                    return val.toFixed(1) + "%";
+                                }
+                            }
+                        },
+                        tooltip: {
+                            y: {
+                                formatter: function(val) {
+                                    return val.toFixed(1) + "% reliability";
+                                }
+                            }
+                        }
+                    });
+                    chart.value.render();
+                };
+                
+                // Update chart when safety changes
+                watch(safetyPrecision, (newVal) => {
+                    reliability.value = 99.8 - (newVal * 0.1);
+                    if (chart.value) {
+                        const currentData = chart.value.w.globals.series[0];
+                        const newData = [...currentData, reliability.value];
+                        if (newData.length > 15) newData.shift();
+                        chart.value.updateSeries([{ data: newData }]);
+                    }
+                });
+                
+                // Keyboard shortcuts
+                const setupKeyboardShortcuts = () => {
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === '1') safetyPrecision.value = 0.5;
+                        if (e.key === '2') safetyPrecision.value = 2.0;
+                        if (e.key === 'e' || e.key === 'E') triggerEmergency();
+                    });
+                };
+                
+                // Initialize on mount
+                onMounted(() => {
+                    initBricks();
+                    initChart();
+                    setupKeyboardShortcuts();
+                    window.addEventListener('resize', initBricks);
+                });
+                
+                return {
+                    safetyPrecision,
+                    birthRate,
+                    emergencyActive,
+                    reliability,
+                    bricks,
+                    toleranceClass,
+                    lifeExpectancyGain,
+                    premiumReduction,
+                    birthRateStability,
+                    clauseText,
+                    triggerEmergency
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
